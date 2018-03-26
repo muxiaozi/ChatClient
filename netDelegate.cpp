@@ -1,8 +1,6 @@
 ﻿#include "netdelegate.h"
 
 #include <QTcpSocket>
-#include <QJsonObject>
-#include <QStringList>
 #include <QHostAddress>
 #include <QDataStream>
 #include <QByteArray>
@@ -22,26 +20,90 @@ bool NetDelegate::connectToServer(const QString &ip, int port, const QString &na
 	this->name = name;
 	socket->connectToHost(QHostAddress(ip), port);
 	if(socket->waitForConnected()){
-		socket->write(name.toUtf8());
+        sendMyInfo(socket->socketDescriptor(), name);
 		return true;
 	}else{
 		return false;
-	}
+    }
+}
+
+void NetDelegate::sendMyInfo(qintptr socketDescriptor, const QString &name)
+{
+    QByteArray data;
+    QDataStream stream(&data, QIODevice::WriteOnly);
+    stream<<(int)0;
+    stream<<(int)CLIENT_CONNECTED;
+    stream<<socketDescriptor;
+    stream<<name.toUtf8();
+    stream.device()->seek(0);
+    stream<<data.size();
+    socket->write(data);
 }
 
 bool NetDelegate::sendText(const QString &text)
 {
 	if(socket->isWritable()){
-		socket->write(text.toUtf8());
+        QByteArray data;
+        QDataStream stream(&data, QIODevice::WriteOnly);
+        stream<<(int)0;
+        stream<<(int)RECEIVE_TEXT_SINGAL;
+        stream<<(qintptr)socket->socketDescriptor();
+        stream<<(qintptr)200;
+        stream<<text.toUtf8();
+        stream.device()->seek(0);
+        stream<<data.size();
+        socket->write(data);
 	}
+    return true;
 }
 
 void NetDelegate::readyRead()
 {
-	while(socket->bytesAvailable() > 0){
-		QByteArray data = socket->readLine();
-		emit receiveText(socket->socketDescriptor(), QString::fromUtf8(data));
-	}
+    int size;
+    int type;
+    qintptr sender;
+
+    packetData.append(socket->readAll());
+    QDataStream stream(&packetData, QIODevice::ReadOnly);
+
+    stream>>size;
+    if(packetData.size() < size)
+        return;
+    stream>>type;
+    stream>>sender;
+
+    switch(type){
+        case CLIENT_CONNECTED: //用户信息
+        {
+            QByteArray byteName;
+            stream>>byteName;
+            //TODO ...
+            clientDescriptor = sender;
+            name = QString::fromUtf8(byteName);
+            emit onClientConnected(sender, name);
+            break;
+        }
+        case RECEIVE_TEXT_SINGAL:
+        case RECEIVE_VOICE_SINGAL:
+        {
+            qintptr receiver;
+            stream>>receiver;
+            QByteArray byteText;
+            stream>>byteText;
+            qDebug()<<QString::fromUtf8(byteText);
+            emit sendToOne(receiver, packetData.left(size));
+            break;
+        }
+        case CLIENT_DISCONNECTED:
+        case RECEIVE_TEXT_ALL:
+        case RECEIVE_VOICE_ALL:
+        {
+            emit sendExceptOne(sender, packetData.left(size));
+            break;
+        }
+    }
+
+    packetData = packetData.right(packetData.size() - size);
 }
 
 NetDelegate::NetDelegate(QObject *parent) :

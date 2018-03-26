@@ -2,19 +2,21 @@
 #define NETDELEGATE_H
 
 #include <QObject>
+#include <QHash>
 
 class QTcpSocket;
 
 class NetDelegate : public QObject
 {
     Q_OBJECT
+public:
     enum DataType{
-        CLIENT_CONNECTED = 0,       // id, name     [quint64, utf8]
-        CLIENT_DISCONNECTED = 1,    // id           [quint64]
-        RECEIVE_TEXT_SINGAL = 2,    // id, text     [quint64, utf8]
-        RECEIVE_TEXT_ALL = 3,       // id, text     [quint64, utf8]
-        RECEIVE_VOICE_SINGAL = 4,   // id, voice    [quint64, quint32, blob]
-        RECEIVE_VOICE_ALL = 5,      // id, voice    [quint64, quint32, blob]
+        CLIENT_CONNECTED = 1,
+        CLIENT_DISCONNECTED = 2,
+        RECEIVE_TEXT_SINGAL = 3,
+        RECEIVE_TEXT_ALL = 4,
+        RECEIVE_VOICE_SINGAL = 5,
+        RECEIVE_VOICE_ALL = 6,
     };
 
 public:
@@ -22,8 +24,9 @@ public:
     static void releaseInstance();
 
     bool connectToServer(const QString &ip, int port, const QString &name);
-
-    bool sendText(const QString &text);
+    void sendMyInfo(qintptr socketDescriptor, const QString &name);
+    bool sendTextToOne(qintptr someone, const QString &text);
+    bool sendTextToAll(const QString &text);
 
 signals:
     //与服务器断开连接
@@ -44,10 +47,12 @@ private:
     explicit NetDelegate(QObject *parent = 0);
     ~NetDelegate();
 
+private:
     static NetDelegate *m_instance;
-
     QTcpSocket *socket;
+    QByteArray packetData;
     QString name;
+    QHash<qintptr, QString> clientMap;
 
 };
 
