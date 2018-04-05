@@ -4,7 +4,7 @@
 #include <QDialog>
 
 namespace Ui {
-    class LoginDialog;
+class LoginDialog;
 }
 class NetWork;
 

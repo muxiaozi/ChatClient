@@ -1,4 +1,8 @@
-﻿#include "login.h"
+﻿#if _MSC_VER >= 1600
+#pragma execution_character_set("utf-8")
+#endif
+
+#include "login.h"
 #include "ui_logindialog.h"
 #include "netdelegate.h"
 #include <QMessageBox>
@@ -6,15 +10,15 @@
 #include <QTcpSocket>
 
 Login::Login(QWidget *parent) :
-	QDialog(parent),
+    QDialog(parent),
     ui(new Ui::LoginDialog)
 {
-	ui->setupUi(this);
+    ui->setupUi(this);
 }
 
 Login::~Login()
 {
-	delete ui;
+    delete ui;
 }
 
 void Login::on_btnLogin_clicked()

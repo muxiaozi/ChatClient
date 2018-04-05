@@ -11,12 +11,12 @@ class NetDelegate : public QObject
     Q_OBJECT
 public:
     enum DataType{
-        CLIENT_CONNECTED = 1,
-        CLIENT_DISCONNECTED = 2,
-        RECEIVE_TEXT_SINGAL = 3,
-        RECEIVE_TEXT_ALL = 4,
-        RECEIVE_VOICE_SINGAL = 5,
-        RECEIVE_VOICE_ALL = 6,
+        CONNECTED = 1,
+        DISCONNECTED = 2,
+        TEXT_TO_ONE = 3,
+        TEXT_TO_ALL = 4,
+        VOICE_TO_ONE = 5,
+        VOICE_TO_ALL = 6,
     };
 
 public:
@@ -30,13 +30,13 @@ public:
 
 signals:
     //与服务器断开连接
-    void disconnectFromServer();
+    void onDisconnected();
     //用户连接
-    void clientConnected(qintptr descriptor, const QString &name);
+    void onClientConnected(qintptr user, const QString &name);
     //用户断开
-    void clientDisconnected(qintptr descriptor);
+    void onClientDisconnected(qintptr user);
     //收到某用户消息
-    void receiveText(qintptr descriptor, const QString &text);
+    void onReceiveText(qintptr user, const QString &text, bool global);
     //收到某用户语音信息
     void receiveVoice(qintptr descriptor, const char *data);
 
