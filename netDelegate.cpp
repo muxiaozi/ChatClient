@@ -40,20 +40,34 @@ void NetDelegate::sendMyInfo(qintptr socketDescriptor, const QString &name)
     socket->write(data);
 }
 
-bool NetDelegate::sendText(const QString &text)
+bool NetDelegate::sendTextToOne(qintptr someone, const QString &text)
 {
-	if(socket->isWritable()){
-        QByteArray data;
-        QDataStream stream(&data, QIODevice::WriteOnly);
-        stream<<(int)0;
-        stream<<(int)RECEIVE_TEXT_SINGAL;
-        stream<<(qintptr)socket->socketDescriptor();
-        stream<<(qintptr)200;
-        stream<<text.toUtf8();
-        stream.device()->seek(0);
-        stream<<data.size();
-        socket->write(data);
-	}
+    QByteArray data;
+    QDataStream stream(&data, QIODevice::WriteOnly);
+    stream<<(int)0;
+    stream<<(int)RECEIVE_TEXT_SINGAL;
+    stream<<socket->socketDescriptor();
+    stream<<someone;
+    stream<<text.toUtf8();
+    stream.device()->seek(0);
+    stream<<data.size();
+
+    socket->write(data);
+    return true;
+}
+
+bool NetDelegate::sendTextToAll(const QString &text)
+{
+    QByteArray data;
+    QDataStream stream(&data, QIODevice::WriteOnly);
+    stream<<(int)0;
+    stream<<(int)RECEIVE_TEXT_ALL;
+    stream<<socket->socketDescriptor();
+    stream<<text.toUtf8();
+    stream.device()->seek(0);
+    stream<<data.size();
+
+    socket->write(data);
     return true;
 }
 
@@ -77,28 +91,33 @@ void NetDelegate::readyRead()
         {
             QByteArray byteName;
             stream>>byteName;
-            //TODO ...
-            clientDescriptor = sender;
             name = QString::fromUtf8(byteName);
-            emit onClientConnected(sender, name);
+            emit clientConnected(sender, name);
+
+            qDebug()<<name;
             break;
         }
         case RECEIVE_TEXT_SINGAL:
-        case RECEIVE_VOICE_SINGAL:
         {
-            qintptr receiver;
-            stream>>receiver;
-            QByteArray byteText;
-            stream>>byteText;
-            qDebug()<<QString::fromUtf8(byteText);
-            emit sendToOne(receiver, packetData.left(size));
+
             break;
         }
-        case CLIENT_DISCONNECTED:
         case RECEIVE_TEXT_ALL:
+        {
+
+            break;
+        }
+        case RECEIVE_VOICE_SINGAL:
+        {
+
+        }
+        case CLIENT_DISCONNECTED:
+        {
+            break;
+        }
         case RECEIVE_VOICE_ALL:
         {
-            emit sendExceptOne(sender, packetData.left(size));
+
             break;
         }
     }

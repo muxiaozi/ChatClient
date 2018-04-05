@@ -14,6 +14,11 @@ class NetDelegate;
 class ChatClient : public QMainWindow
 {
 	Q_OBJECT
+public:
+    struct ClientEntity{
+        QString name;
+        QStringList textHistory;
+    };
 
 public:
 	explicit ChatClient(QWidget *parent = 0);
@@ -23,6 +28,10 @@ private slots:
 	void on_listUser_itemDoubleClicked(QListWidgetItem *item);
 
     void disconnectFromServer();
+
+    void onClientConnected(qintptr user, const QString &name);
+    void onClientDisconnected(qintptr user);
+    void onReceiveText(qintptr user, const QString &text, bool global);
 
     void on_btnVoice_pressed();
 
@@ -34,11 +43,14 @@ private slots:
 
     void receiveText(qintptr descriptor, const QString &text);
 
+    void on_listUser_clicked(const QModelIndex &index);
+
 private:
     inline QString getTime();
 
 	Ui::ChatClient *ui;
-    QHash<QString, QString> onlineUsers; //在线用户表
+    QHash<qintptr, ClientEntity> clientMap; //用户消息
+    QStringList globalMessage; //全局消息
     NetDelegate *netDelegate;
 
 };
